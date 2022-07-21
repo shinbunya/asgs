@@ -30,9 +30,9 @@ RMQMessaging_Enable="on"
 RMQMessaging_Transmit="on"
 QSCRIPTTEMPLATE=$SCRIPTDIR/config/2022/ncfs-dev/qscript.template-bridges2-RM-Shared
 
-#INSTANCENAME=ec95d-nam-bob-da-nowcast      # "name" of this ASGS process
-INSTANCENAME=ec95d-al01-bob-psc      # "name" of this ASGS process
+INSTANCENAME=ec95d-nam-bob-psc      # "name" of this ASGS process
 SCRATCHDIR="$HOME/results/${INSTANCENAME}"
+TDS=( renci_tds renci_tds-k8 )
 
 # Source file paths
 HM=/jet/home/bblanton
@@ -43,7 +43,6 @@ SCRIPTDIR="$HM/asgs.renci-2021"    # ASGS executables
 INPUTDIR=$SCRIPTDIR/input/meshes/ec95d     # grid and other input files
 OUTPUTDIR=${SCRIPTDIR}/output              # post processing scripts
 
-
 # Input files and templates
 
 GRIDNAME=ec95d
@@ -51,19 +50,19 @@ source $SCRIPTDIR/config/mesh_defaults.sh
 
 # Initial state (overridden by STATEFILE after ASGS gets going)
 
-COLDSTARTDATE=2022050100  # calendar year month day hour YYYYMMDDHH24
+COLDSTARTDATE=2022062200  # calendar year month day hour YYYYMMDDHH24
 HOTORCOLD=coldstart       # "hotstart" or "coldstart"
 LASTSUBDIR=null
 
 # Physical forcing (defaults set in config/forcing_defaults.sh)
 
 TIDEFAC=on               # tide factor recalc
-   HINDCASTLENGTH=32.0   # length of initial hindcast, from cold (days)
-BACKGROUNDMET=off         # NAM download/forcing
+   HINDCASTLENGTH=16.0   # length of initial hindcast, from cold (days)
+BACKGROUNDMET=on         # NAM download/forcing
    FORECASTCYCLE="00,06,12,18"
-TROPICALCYCLONE=on      # tropical cyclone forcing
-   STORM=01              # storm number, e.g. 05=ernesto in 2006
-   YEAR=2022             # year of the storm
+TROPICALCYCLONE=off      # tropical cyclone forcing
+   STORM=-1              # storm number, e.g. 05=ernesto in 2006
+   YEAR=2021             # year of the storm
 WAVES=on                 # wave forcing
    REINITIALIZESWAN=no   # used to bounce the wave solution
 VARFLUX=off              # variable river flux forcing
@@ -75,10 +74,11 @@ CYCLETIMELIMIT="99:00:00"
 
 # Computational Resources (related defaults set in platforms.sh)
 
-NCPU=16                    # number of compute CPUs for all simulations
-NCPUCAPACITY=128
+NCPU=32                    # number of compute CPUs for all simulations
+NCPUCAPACITY=64
 NUMWRITERS=0
-#ACCOUNT=null
+ACCOUNT=null
+#EXCLUDE="compute-9-xx"
 QUEUENAME="RM-shared"
 
 # Post processing and publication
@@ -88,6 +88,7 @@ INTENDEDAUDIENCE=developers-only    # "general" | "developers-only" | "professio
 FINISH_NOWCAST_SCENARIO=( output/opendap_post_nowcast.sh output/opendap_post_nowcast_k8.sh ) # output/run_adda.sh )
 #POSTPROCESS=( accumulateMinMax.sh createMaxCSV.sh cpra_slide_deck_post.sh includeWind10m.sh createOPeNDAPFileList.sh opendap_post.sh )
 POSTPROCESS=( createOPeNDAPFileList.sh opendap_post.sh opendap_post_k8.sh transmit_rps.sh )
+#POSTPROCESS=( createOPeNDAPFileList.sh opendap_post_k8.sh transmit_rps.sh )
 #POSTPROCESS=( includeWind10m.sh createOPeNDAPFileList.sh opendap_post.sh transmit_rps.sh )
 
 #OPENDAPNOTIFY="asgs.cera.lsu@gmail.com jason.g.fleming@gmail.com"
@@ -107,15 +108,11 @@ case $si in
        ENSTORM=nowcast
        ;;
     0)
-       ENSTORM=nhcOfcl
+       ENSTORM=namforecast
        ;;
     1)
-       ENSTORM=veerLeft100
-       PERCENT=-100
-       ;;
-    2)
-       ENSTORM=veerRight100
-       PERCENT=100
+       ENSTORM=namforecastWind10m
+       source $SCRIPTDIR/config/io_defaults.sh # sets met-only mode based on "Wind10m" suffix
        ;;
     *)   
        echo "CONFIGRATION ERROR: Unknown ensemble member number: '$si'."
